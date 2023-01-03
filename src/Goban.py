@@ -765,3 +765,19 @@ class Board:
         board += '</svg></svg>'
         #'\    <text x="100" y="100" font-size="30" font-color="black"> Hello </text>\
         return board
+
+    @property
+    def board(self):
+        return self._board
+
+    @property
+    def stringLiberties(self):
+        return self._stringLiberties
+
+    @property
+    def BLACK(self):
+        return self._BLACK
+
+    @property
+    def WHITE(self):
+        return self._WHITE
