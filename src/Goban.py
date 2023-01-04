@@ -416,7 +416,8 @@ class Board:
         self._currentHash ^= self._getPositionHash(fcoord, color)
         if self._DEBUG:
             assert fcoord in self._empties
-        self._empties.remove(fcoord)
+        if fcoord in self._empties:
+            self._empties.remove(fcoord)
 
         nbEmpty = 0
         nbSameColor = 0
