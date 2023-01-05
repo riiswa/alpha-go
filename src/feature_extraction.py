@@ -109,8 +109,8 @@ class SGFDataset:
         board = Board()
 
         turn = 0
-        #total_turn = len(game.get_main_sequence())
         data = []
+        winner = game.get_winner()
         for node in game.get_main_sequence():
             color, coords = node.get_move()
 
@@ -125,7 +125,10 @@ class SGFDataset:
                 move_layer = np.zeros(DIM)
                 move_layer[move] = 1
                 for transformation in self.transformations:
-                    data.append((X[:, transformation], move_layer[transformation]))
+                    transformed_X = X[:, transformation].reshape((X.shape[0], 9, 9))
+                    transformed_move_layer = move_layer[transformation].reshape((9, 9))
+                    v = torch.tensor(color == winner)
+                    data.append((transformed_X, transformed_move_layer, v))
             turn += 1
         return data
 
@@ -149,8 +152,8 @@ if __name__ == "__main__":
         "https://homepages.cwi.nl/~aeb/go/games/games/ProPairgo/2009/index.html",
         "https://homepages.cwi.nl/~aeb/go/games/games/other_sizes/9x9/computer/"
     ]
-    dataset = SGFDataset(download_games(urls))
+    dataset = SGFDataset(download_games(urls[:1]))
     data = []
     for game in tqdm(dataset):
         data += game
-    print(data)
+    print(len(data))
