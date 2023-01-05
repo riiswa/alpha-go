@@ -2,7 +2,7 @@ from multiprocessing import Pool
 from playerInterface import *
 from Goban import Board
 from node import MCTSNode
-
+import random
 import math
 import copy
 import time
