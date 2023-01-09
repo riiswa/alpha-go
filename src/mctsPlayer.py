@@ -19,12 +19,16 @@ class myPlayer(PlayerInterface):
     def getPlayerMove(self):
         if self._board.is_game_over():
             return "PASS"
-        move = self.select_move(self._board)
-        self._board.play_move(move)
+        try : 
+            move = self.select_move(self._board)
+        except:
+            return "PASS"
+        
+        self._board.push(move)
         return Board.flat_to_name(move) 
 
     def playOpponentMove(self, move):
-        self._board.play_move(Board.name_to_flat(move)) 
+        self._board.push(Board.name_to_flat(move)) 
 
     def newGame(self, color):
         self._mycolor = color
@@ -32,12 +36,12 @@ class myPlayer(PlayerInterface):
 
     def endGame(self, winner):
         if self._mycolor == winner:
-            print("I won :D")
+            print("I won!!!")
         else:
-            print("I lost :(")
+            print("I lost :(!!")
 
     @staticmethod
-    def select_move(board_org, max_time=1, temperature=1.2):
+    def select_move(board_org, max_time=1, temperature=1.41):
         start_time = time.time()
         root = MCTSNode(board_org.weak_legal_moves())
         # add nodes
@@ -126,7 +130,7 @@ class myPlayer(PlayerInterface):
                 return friendly_corners >= 3
             # Point is on the edge or corner.
             return (4-i_org-i) + friendly_corners == 4
-        # ==============================
+
         while not board.is_game_over():
             moves = board.weak_legal_moves()
             random.shuffle(moves)
@@ -143,4 +147,3 @@ class myPlayer(PlayerInterface):
             return "0-1"
         else:
             return "1/2-1/2"
-        #return board.result()
