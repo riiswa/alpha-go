@@ -5,6 +5,7 @@ from urllib.error import HTTPError
 from urllib.parse import urljoin
 
 import requests
+from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
 from Goban import Board
@@ -48,7 +49,7 @@ def download_games(urls: List[str]):
     return sgf_files
 
 
-class SGFDataset:
+class SGFDataset(Dataset):
     color_dict = {'b': Board.BLACK, 'w': Board.WHITE}
 
     def __init__(self, sgf_files):
@@ -104,17 +105,16 @@ class SGFDataset:
         return layer
 
     def __getitem__(self, idx):
+
         with open(self.sgf_files[idx], "rb") as f:
             game = sgf.Sgf_game.from_bytes(f.read())
         board = Board()
 
         turn = 0
-        data = []
         winner = game.get_winner()
         for node in game.get_main_sequence():
             color, coords = node.get_move()
-
-            if not coords is None:
+            if coords is not None:
                 move = Board.flatten(coords)
                 color_layers = list(self.get_color_layers_from_board(board, self.color_dict[color]))
                 liberties_layers = self.get_liberties_layers_from_board(board, 4)
@@ -128,9 +128,8 @@ class SGFDataset:
                     transformed_X = X[:, transformation].reshape((X.shape[0], 9, 9))
                     transformed_move_layer = move_layer[transformation].reshape((9, 9))
                     v = torch.tensor(color == winner)
-                    data.append((transformed_X, transformed_move_layer, v))
+                    yield transformed_X, transformed_move_layer, v
             turn += 1
-        return data
 
 
 if __name__ == "__main__":
@@ -153,7 +152,14 @@ if __name__ == "__main__":
         "https://homepages.cwi.nl/~aeb/go/games/games/other_sizes/9x9/computer/"
     ]
     dataset = SGFDataset(download_games(urls[:1]))
-    data = []
-    for game in tqdm(dataset):
-        data += game
-    print(len(data))
+    for i in tqdm(range(len(dataset))):
+        dataset[i]
+    # dataloader = DataLoader(dataset, batch_size=32,
+    #                         shuffle=True, num_workers=0)
+    # for i_batch, sample_batched in enumerate(dataloader):
+    #     print(sample_batched)
+    #     break
+    # data = []
+    # i = 0
+    # print(dataset[0])
+
