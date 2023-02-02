@@ -68,7 +68,7 @@ def train(
         writer,
         device,
         epochs=100,
-        batch_size=1024
+        batch_size=256
 ):
     train_dataset = TensorDataset(train_dataset["X"], train_dataset[target_name])
     train_loader = DataLoader(train_dataset, batch_size, shuffle=False)
@@ -91,7 +91,7 @@ def train(
             running_accuracy = 0
             with torch.no_grad():
                 for inputs, targets in test_loader:
-                    outputs = network(inputs.to(device))
+                    outputs = network(inputs.to(device)).detach().cpu()
                     running_accuracy += torch.count_nonzero(predict_f(outputs) == predict_f(targets)) / targets.shape[0]
 
             writer.add_scalar(f"Accuracy/{target_name}", running_accuracy / len(test_loader), step)
