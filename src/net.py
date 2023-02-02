@@ -157,5 +157,5 @@ if __name__ == "__main__":
         lambda x: (x > 0.5).long(),
         writer,
         device,
-        epochs = 200
+        epochs=200
     )
