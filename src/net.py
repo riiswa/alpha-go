@@ -68,7 +68,7 @@ def train(
         writer,
         device,
         epochs=100,
-        batch_size=512
+        batch_size=1024
 ):
     train_dataset = TensorDataset(train_dataset["X"], train_dataset[target_name])
     train_loader = DataLoader(train_dataset, batch_size, shuffle=False)
@@ -99,7 +99,7 @@ def train(
 
 if __name__ == "__main__":
     device = torch.device('cuda:7' if torch.cuda.is_available() else 'cpu')
-    writer = SummaryWriter
+    writer = SummaryWriter()
     dataset = torch.load("dataset.pt")
     train_dataset = {}
     test_dataset = {}
