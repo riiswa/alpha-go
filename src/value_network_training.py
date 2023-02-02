@@ -31,8 +31,8 @@ if __name__ == "__main__":
 
     feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 6).to(device)
     feature_network2.load_state_dict(policy_network.feature_extractor.state_dict())
-    for param in feature_network2.parameters():
-        param.requires_grad = False
+    # for param in feature_network2.parameters():
+    #     param.requires_grad = False
 
     value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid).to(device)
 
