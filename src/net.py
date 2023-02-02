@@ -65,6 +65,7 @@ def train(
         optimizer,
         predict_f,
         writer,
+        device,
         epochs=100,
         batch_size=512
 ):
@@ -76,8 +77,8 @@ def train(
     for step in tqdm(range(epochs), desc="Step training"):
         running_loss = 0
         for inputs, targets in tqdm(train_loader, desc="Batch training"):
-            outputs = network(inputs)
-            loss = criterion(outputs, targets)
+            outputs = network(inputs.to(device))
+            loss = criterion(outputs, targets.to(device))
 
             optimizer.zero_grad()
             loss.backward()
@@ -89,13 +90,14 @@ def train(
             running_accuracy = 0
             with torch.no_grad():
                 for inputs, targets in test_loader:
-                    outputs = network(inputs)
+                    outputs = network(inputs.to(device))
                     running_accuracy += torch.count_nonzero(predict_f(outputs) == predict_f(targets)) / targets.shape[0]
 
             writer.add_scalar(f"Accuracy/{target_name}", running_accuracy / len(test_loader), step)
 
 
 if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     writer = SummaryWriter
     dataset = torch.load("dataset.pt")
     train_dataset = {}
@@ -109,8 +111,8 @@ if __name__ == "__main__":
         train_dataset[k] = v[train_indices]
         test_dataset[k] = v[test_indices]
 
-    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11)
-    policy_network = GoNetwork(feature_network1, 81, nn.functional.softmax)
+    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11).to(device)
+    policy_network = GoNetwork(feature_network1, 81, nn.functional.softmax).to(device)
 
     print("Start policy network training...")
     train(
@@ -121,12 +123,13 @@ if __name__ == "__main__":
         nn.CrossEntropyLoss(),
         torch.optim.Adam(policy_network.parameters(), lr=0.001),
         lambda x: x.argmax(-1),
-        writer
+        writer,
+        device
     )
 
-    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11)
+    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11).to(device)
     feature_network2.load_state_dict(feature_network1.state_dict())
-    value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid)
+    value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid).to(device)
 
     print("Start value network training...")
     train(
@@ -137,5 +140,6 @@ if __name__ == "__main__":
         nn.BCELoss(),
         torch.optim.Adam(value_network.parameters(), lr=0.001),
         lambda x: (x > 0.5).long(),
-        writer
+        writer,
+        device
     )
