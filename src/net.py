@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, in_channels, n_filters, n_layers):
+    def __init__(self, in_channels, n_filters, n_layers, device):
         super(FeatureExtractor, self).__init__()
         self.convs = []
         self.bns = []
@@ -21,10 +21,11 @@ class FeatureExtractor(nn.Module):
                     3,
                     padding=1,
                     bias=False
-                )
+                ).to(device)
             )
-            self.bns.append(nn.BatchNorm2d(n_filters))
+            self.bns.append(nn.BatchNorm2d(n_filters).to(device))
         self.relu = nn.ReLU()
+        self.to(device)
 
     def forward(self, x):
         for i in range(self.n_layers):
@@ -111,7 +112,7 @@ if __name__ == "__main__":
         train_dataset[k] = v[train_indices]
         test_dataset[k] = v[test_indices]
 
-    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11).to(device)
+    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11, device)
     policy_network = GoNetwork(feature_network1, 81, nn.functional.softmax).to(device)
 
     print("Start policy network training...")
@@ -127,7 +128,7 @@ if __name__ == "__main__":
         device
     )
 
-    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11).to(device)
+    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11, device)
     feature_network2.load_state_dict(feature_network1.state_dict())
     value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid).to(device)
 
