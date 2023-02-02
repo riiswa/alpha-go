@@ -6,31 +6,28 @@ from tqdm import tqdm
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, in_channels, n_filters, n_layers, device):
+    def __init__(self, in_channels, n_filters, n_layers):
         super(FeatureExtractor, self).__init__()
-        self.convs = []
-        self.bns = []
         self.n_layers = n_layers
         self.n_filters = n_filters
 
         for i in range(n_layers):
-            self.convs.append(
-                nn.Conv2d(
-                    in_channels if i == 0 else n_filters,
-                    n_filters,
-                    3,
-                    padding=1,
-                    bias=False
-                ).to(device)
-            )
-            self.bns.append(nn.BatchNorm2d(n_filters).to(device))
+            setattr(self, f"conv{i}", nn.Conv2d(
+                in_channels if i == 0 else n_filters,
+                n_filters,
+                3,
+                padding=1,
+                bias=False
+            ))
+
+            setattr(self, f"bn{i}", nn.BatchNorm2d(n_filters))
         self.relu = nn.ReLU()
         self.to(device)
 
     def forward(self, x):
         for i in range(self.n_layers):
-            x = self.convs[i](x)
-            x = self.bns[i](x)
+            x = getattr(self, f"conv{i}")(x)
+            x = getattr(self, f"bm{i}")(x)
             x = self.relu(x)
         return x
 
@@ -112,7 +109,7 @@ if __name__ == "__main__":
         train_dataset[k] = v[train_indices]
         test_dataset[k] = v[test_indices]
 
-    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11, device)
+    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11)
     policy_network = GoNetwork(feature_network1, 81, nn.functional.softmax).to(device)
 
     print("Start policy network training...")
@@ -128,7 +125,7 @@ if __name__ == "__main__":
         device
     )
 
-    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11, device)
+    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11)
     feature_network2.load_state_dict(feature_network1.state_dict())
     value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid).to(device)
 
