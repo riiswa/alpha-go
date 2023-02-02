@@ -48,6 +48,9 @@ def download_games(urls: List[str]):
                     print("Error 404 with: " + urljoin(url, sgf_file))
     return sgf_files
 
+class WrongBoardSizeException(Exception):
+    def __init__(self, n):
+        self.n = n
 
 class SGFDataset(Dataset):
     color_dict = {'b': Board.BLACK, 'w': Board.WHITE}
@@ -108,6 +111,9 @@ class SGFDataset(Dataset):
 
         with open(self.sgf_files[idx], "rb") as f:
             game = sgf.Sgf_game.from_bytes(f.read())
+        if game.size != 9:
+            raise WrongBoardSizeException(game.size)
+
         board = Board()
 
         turn = 0
@@ -117,7 +123,7 @@ class SGFDataset(Dataset):
             if coords is not None:
                 move = Board.flatten(coords)
                 color_layers = list(self.get_color_layers_from_board(board, self.color_dict[color]))
-                liberties_layers = self.get_liberties_layers_from_board(board, 4)
+                liberties_layers = self.get_liberties_layers_from_board(board, 7)
                 legal_move_layer = self.get_legal_moves_layer(board)
                 board.play_move(move)
                 X = torch.stack(color_layers + liberties_layers + [legal_move_layer])
@@ -127,8 +133,8 @@ class SGFDataset(Dataset):
                 for transformation in self.transformations:
                     transformed_X = X[:, transformation].reshape((X.shape[0], 9, 9))
                     transformed_move_layer = move_layer[transformation].reshape((9, 9))
-                    v = torch.tensor(color == winner)
-                    yield transformed_X, transformed_move_layer, v
+                    v = torch.tensor(color == winner).float().unsqueeze(-1)
+                    yield transformed_X, torch.from_numpy(transformed_move_layer).flatten(), v
             turn += 1
 
 
@@ -151,15 +157,26 @@ if __name__ == "__main__":
         "https://homepages.cwi.nl/~aeb/go/games/games/ProPairgo/2009/index.html",
         "https://homepages.cwi.nl/~aeb/go/games/games/other_sizes/9x9/computer/"
     ]
-    dataset = SGFDataset(download_games(urls[:1]))
+    dataset = SGFDataset(download_games(urls))
+    X = []
+    policy_data = []
+    value_data = []
+
     for i in tqdm(range(len(dataset))):
-        dataset[i]
-    # dataloader = DataLoader(dataset, batch_size=32,
-    #                         shuffle=True, num_workers=0)
-    # for i_batch, sample_batched in enumerate(dataloader):
-    #     print(sample_batched)
-    #     break
-    # data = []
-    # i = 0
-    # print(dataset[0])
+        try:
+            game = dataset[i]
+            for data in game:
+                X.append(data[0])
+                policy_data.append(data[1])
+                value_data.append(data[2])
+        except WrongBoardSizeException as e:
+            print(f"Skipped board with {e.n} size.")
+
+    print("Saving...")
+    torch.save({
+        "X": torch.stack(X),
+        "policy_data": torch.stack(policy_data),
+        "value_data": torch.stack(value_data)}, "dataset.pt"
+    )
+
 

@@ -7,6 +7,7 @@ import math
 import copy
 import time
 
+
 class myPlayer(PlayerInterface):
 
     def __init__(self):
@@ -19,16 +20,16 @@ class myPlayer(PlayerInterface):
     def getPlayerMove(self):
         if self._board.is_game_over():
             return "PASS"
-        try : 
+        try:
             move = self.select_move(self._board)
         except:
             return "PASS"
-        
+
         self._board.push(move)
-        return Board.flat_to_name(move) 
+        return Board.flat_to_name(move)
 
     def playOpponentMove(self, move):
-        self._board.push(Board.name_to_flat(move)) 
+        self._board.push(Board.name_to_flat(move))
 
     def newGame(self, color):
         self._mycolor = color
@@ -45,10 +46,10 @@ class myPlayer(PlayerInterface):
         start_time = time.time()
         root = MCTSNode(board_org.weak_legal_moves())
         # add nodes
-        i=0
+        i = 0
         nb_rollout = 0
         pool = Pool()
-        while(True):
+        while (True):
             board = copy.deepcopy(board_org)
             node = root
             while (not node.can_add_child()) and (not board.is_game_over()):
@@ -96,7 +97,6 @@ class myPlayer(PlayerInterface):
         win_percentage = child.winning_frac(board.next_player())
         exploration_factor = math.sqrt(log_rollouts / child.num_rollouts)
         return win_percentage + cpuct * exploration_factor
-        
 
     @staticmethod
     def select_child(node, board, cpuct):
@@ -108,7 +108,7 @@ class myPlayer(PlayerInterface):
             if uct_score > best_score:
                 best_score = uct_score
                 best_child = child
-        
+
         board.play_move(best_child.move)
         return best_child
 
@@ -119,30 +119,30 @@ class myPlayer(PlayerInterface):
             i_org = i = board._neighborsEntries[coord]
             while board._neighbors[i] != -1:
                 n = board._board[board._neighbors[i]]
-                if  n == board.next_player():
+                if n == board.next_player():
                     return False
-                
+
                 if (n != Board._EMPTY) or (n != board.next_player()):
                     friendly_corners += 1
                 i += 1
-            
-            if i >= i_org+4:
+
+            if i >= i_org + 4:
                 return friendly_corners >= 3
-            return (4-i_org-i) + friendly_corners == 4
+            return (4 - i_org - i) + friendly_corners == 4
 
         while not board.is_game_over():
             moves = board.weak_legal_moves()
             random.shuffle(moves)
-            valid_move = -1 # PASS
-            
+            valid_move = -1  # PASS
+
             for move in moves:
-                if not(is_point_an_eye(board, move)) and (board.play_move(move)):
+                if not (is_point_an_eye(board, move)) and (board.play_move(move)):
                     valid_move = move
                     break
-            
+
             if valid_move == -1:
                 board.play_move(-1)
-        
+
         if (board._nbWHITE > board._nbBLACK):
             return "1-0"
         elif (board._nbWHITE < board._nbBLACK):
