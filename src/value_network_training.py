@@ -30,7 +30,9 @@ if __name__ == "__main__":
     policy_network.load_state_dict(torch.load("weights/network_policy_data_320_weights.pt"))
 
     feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 6).to(device)
-    feature_network2.load_state_dict(feature_network1.state_dict())
+    feature_network2.load_state_dict(policy_network.feature_extractor.state_dict())
+    for param in feature_network2.parameters():
+        param.requires_grad = False
 
     value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid).to(device)
 
@@ -41,7 +43,7 @@ if __name__ == "__main__":
         test_dataset,
         "value_data",
         nn.BCELoss(),
-        torch.optim.Adam(value_network.parameters(), lr=0.01),
+        torch.optim.Adam(value_network.parameters(), lr=0.005),
         lambda x: (x > 0.5).long(),
         writer,
         device,
