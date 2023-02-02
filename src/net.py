@@ -122,7 +122,7 @@ if __name__ == "__main__":
         test_dataset,
         "policy_data",
         nn.CrossEntropyLoss(),
-        torch.optim.Adam(policy_network.parameters(), lr=0.001),
+        torch.optim.Adam(policy_network.parameters(), lr=0.01),
         lambda x: x.argmax(-1),
         writer,
         device
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         test_dataset,
         "value_data",
         nn.BCELoss(),
-        torch.optim.Adam(value_network.parameters(), lr=0.001),
+        torch.optim.Adam(value_network.parameters(), lr=0.01),
         lambda x: (x > 0.5).long(),
         writer,
         device
