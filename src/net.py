@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, TensorDataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -74,6 +75,9 @@ def train(
 
     test_dataset = TensorDataset(test_dataset["X"], test_dataset[target_name])
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
+
+    scheduler = StepLR(optimizer, step_size=30, gamma=0.5)
+
     for step in tqdm(range(epochs), desc="Step training"):
         running_loss = 0
         for inputs, targets in tqdm(train_loader, desc="Batch training"):
@@ -85,6 +89,7 @@ def train(
             optimizer.step()
             running_loss += loss.item()
         writer.add_scalar(f"Loss/{target_name}", running_loss / len(train_loader), step)
+        scheduler.step()
 
         if step % 10 == 0:
             running_accuracy = 0
@@ -94,6 +99,7 @@ def train(
                     running_accuracy += torch.count_nonzero(predict_f(outputs) == predict_f(targets)) / targets.shape[0]
 
             writer.add_scalar(f"Accuracy/{target_name}", running_accuracy / len(test_loader), step)
+            torch.save(network.state_dict(), f"network_{target_name}_weights.pt")
 
 
 if __name__ == "__main__":
@@ -146,5 +152,6 @@ if __name__ == "__main__":
         torch.optim.Adam(value_network.parameters(), lr=0.01),
         lambda x: (x > 0.5).long(),
         writer,
-        device
+        device,
+        epochs = 200
     )
