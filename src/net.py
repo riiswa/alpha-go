@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import StepLR
@@ -78,6 +80,8 @@ def train(
 
     scheduler = StepLR(optimizer, step_size=30, gamma=0.5)
 
+    os.makedirs("weights", exist_ok=True)
+
     for step in tqdm(range(epochs), desc="Step training"):
         running_loss = 0
         for inputs, targets in tqdm(train_loader, desc="Batch training"):
@@ -99,7 +103,7 @@ def train(
                     running_accuracy += torch.count_nonzero(predict_f(outputs) == predict_f(targets)) / targets.shape[0]
 
             writer.add_scalar(f"Accuracy/{target_name}", running_accuracy / len(test_loader), step)
-            torch.save(network.state_dict(), f"network_{target_name}_weights.pt")
+            torch.save(network.state_dict(), f"weights/network_{target_name}_{step}_weights.pt")
 
 
 if __name__ == "__main__":
