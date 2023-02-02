@@ -26,13 +26,13 @@ class FeatureExtractor(nn.Module):
     def forward(self, x):
         for i in range(self.n_layers):
             x = getattr(self, f"conv{i}")(x)
-            x = getattr(self, f"bm{i}")(x)
+            x = getattr(self, f"bn{i}")(x)
             x = self.relu(x)
         return x
 
 
 class GoNetwork(nn.Module):
-    def __init__(self, feature_extractor: FeatureExtractor, out_size, activation_function):
+    def __init__(self, feature_extractor: FeatureExtractor, out_size, activation_function, residual_function=None):
         super(GoNetwork, self).__init__()
         self.feature_extractor = feature_extractor
 
@@ -42,15 +42,18 @@ class GoNetwork(nn.Module):
         self.linear = nn.Linear(9 * 9, out_size)
 
         self.activation_function = activation_function
+        self.residual_function = residual_function
 
     def forward(self, x):
+        if self.residual_function:
+            x_ = x.clone()
         x = self.feature_extractor(x)
         x = self.conv(x)
         x = self.bn(x)
         x = x.flatten(start_dim=1)
         x = self.linear(x)
         x = self.activation_function(x)
-        return x
+        return self.residual_function(x, x_) if self.residual_function else x
 
 
 def train(
@@ -63,7 +66,7 @@ def train(
         predict_f,
         writer,
         device,
-        epochs=100,
+        epochs=500,
         batch_size=256
 ):
     train_dataset = TensorDataset(train_dataset["X"], train_dataset[target_name])
@@ -108,8 +111,13 @@ if __name__ == "__main__":
         train_dataset[k] = v[train_indices]
         test_dataset[k] = v[test_indices]
 
-    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 11).to(device)
-    policy_network = GoNetwork(feature_network1, 81, nn.functional.softmax).to(device)
+    feature_network1 = FeatureExtractor(dataset["X"].shape[1], 128, 6).to(device)
+    policy_network = GoNetwork(
+        feature_network1,
+        81,
+        nn.functional.softmax,
+        lambda x, x_: x * x_[:, -1, :, :].flatten(start_dim=1)
+    ).to(device)
 
     print("Start policy network training...")
     train(
@@ -124,7 +132,7 @@ if __name__ == "__main__":
         device
     )
 
-    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 11).to(device)
+    feature_network2 = FeatureExtractor(dataset["X"].shape[1], 128, 6).to(device)
     feature_network2.load_state_dict(feature_network1.state_dict())
     value_network = GoNetwork(feature_network2, 1, nn.functional.sigmoid).to(device)
 
