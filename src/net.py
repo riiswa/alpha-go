@@ -153,7 +153,7 @@ if __name__ == "__main__":
         test_dataset,
         "value_data",
         nn.BCELoss(),
-        torch.optim.Adam(value_network.parameters(), lr=0.01),
+        torch.optim.Adam(value_network.parameters(), lr=0.005),
         lambda x: (x > 0.5).long(),
         writer,
         device,

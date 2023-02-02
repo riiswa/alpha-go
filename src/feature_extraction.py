@@ -48,9 +48,11 @@ def download_games(urls: List[str]):
                     print("Error 404 with: " + urljoin(url, sgf_file))
     return sgf_files
 
+
 class WrongBoardSizeException(Exception):
     def __init__(self, n):
         self.n = n
+
 
 class SGFDataset(Dataset):
     color_dict = {'b': Board.BLACK, 'w': Board.WHITE}
@@ -107,6 +109,13 @@ class SGFDataset(Dataset):
         layer[move] = 1
         return layer
 
+    @staticmethod
+    def get_feature_from_board(board: Board, color):
+        color_layers = list(SGFDataset.get_color_layers_from_board(board, SGFDataset.color_dict[color]))
+        liberties_layers = SGFDataset.get_liberties_layers_from_board(board, 7)
+        legal_move_layer = SGFDataset.get_legal_moves_layer(board)
+        return  torch.stack(color_layers + liberties_layers + [legal_move_layer])
+
     def __getitem__(self, idx):
 
         with open(self.sgf_files[idx], "rb") as f:
@@ -122,11 +131,8 @@ class SGFDataset(Dataset):
             color, coords = node.get_move()
             if coords is not None:
                 move = Board.flatten(coords)
-                color_layers = list(self.get_color_layers_from_board(board, self.color_dict[color]))
-                liberties_layers = self.get_liberties_layers_from_board(board, 7)
-                legal_move_layer = self.get_legal_moves_layer(board)
+                X = SGFDataset.get_liberties_layers_from_board(board, color)
                 board.play_move(move)
-                X = torch.stack(color_layers + liberties_layers + [legal_move_layer])
 
                 move_layer = np.zeros(DIM)
                 move_layer[move] = 1
@@ -178,5 +184,3 @@ if __name__ == "__main__":
         "policy_data": torch.stack(policy_data),
         "value_data": torch.stack(value_data)}, "dataset.pt"
     )
-
-

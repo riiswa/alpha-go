@@ -14,6 +14,7 @@ class MCTSNode():
         self.num_rollouts = 0
         self.children = []
         self.unvisited_moves = unvisited_moves
+        self.values = 0
         random.shuffle(self.unvisited_moves)
 
     def add_random_child(self, board):
@@ -33,6 +34,10 @@ class MCTSNode():
             self.win_counts[Board._BLACK] += 1
         self.num_rollouts += 1
 
+    def record_value(self, value):
+        self.values += value
+        self.num_rollouts += 1
+
     def can_add_child(self):
         return len(self.unvisited_moves) > 0
 
@@ -41,4 +46,7 @@ class MCTSNode():
 
     def winning_frac(self, player):
         return float(self.win_counts[player]) / float(self.num_rollouts)
+
+    def value_frac(self):
+        return float(self.values) / float(self.num_rollouts)
 

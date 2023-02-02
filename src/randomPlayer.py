@@ -47,8 +47,8 @@ class myPlayer(PlayerInterface):
         probabilities /= np.sum(probabilities)
 
         # We plot them
-        go_plot.plot_play_probabilities(self._board, probabilities)
-        plt.show()
+        #go_plot.plot_play_probabilities(self._board, probabilities)
+        #plt.show()
 
 
         move = np.random.choice(range(82), p=probabilities)
