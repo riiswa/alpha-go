@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
-from src.net import FeatureExtractor, GoNetwork, train
+from net import FeatureExtractor, GoNetwork, train
 
 if __name__ == "__main__":
     device = torch.device('cuda:7' if torch.cuda.is_available() else 'cpu')
